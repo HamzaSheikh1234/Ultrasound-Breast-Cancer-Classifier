@@ -22,13 +22,7 @@ def load_and_preprocess_image(img_path, target_size=(128, 128)):
     return img_array
 
 def predict(img_array, model):
-    
-    """Takes the processed img_array and the model for prediction as parameters. Returns the result in text (malignant or benign)."""
+    """Takes the processed img_array and the model for prediction as parameters. Returns the probability of malignancy."""
     # Make a prediction
     prediction = model.predict(img_array)
-    print(prediction[0])
-    # Interpret the prediction
-    if prediction[0] > 0.5:
-        return 'malignant'
-    else:
-        return 'benign'
+    return prediction[0]

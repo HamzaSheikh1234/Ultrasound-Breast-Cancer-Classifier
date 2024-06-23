@@ -1,9 +1,11 @@
 from imports import *
 import random
+import numpy as np
+from flask import send_from_directory
+
 app = Flask(__name__)
 
-
-#Load the pre-trained model
+# Load the pre-trained model
 model = keras.models.load_model('best_model1.keras')
 
 # Configure the upload folder and allowed extensions
@@ -33,34 +35,34 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-
-            #result = random.choice(['malignant', 'benign']) #TODO Replace with actual predictions
-
             img_array = load_and_preprocess_image(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            result = predict(img_array=img_array, model=model)
-
-            return redirect(url_for('result', filename=filename, result = result))            
+            probability = predict(img_array=img_array, model=model)
+            if probability > 0.5:
+                result = 'Malignant'
+            else:
+                result = 'Benign'
+            probability = probability[0]
+            probability = probability * 100
+            probability = np.round(probability, 2)
+            probability = str(probability) + '%'
+            return redirect(url_for('result', filename=filename, result=result, probability=probability))
     return render_template('upload.html')
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return f"File uploaded successfully: {filename}"
-
-@app.route('/display/<filename>')
-def display_image(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-
-# @app.route('/malignant/<filename>')
-# def malignant_result(filename):
-#     return render_template('malignant.html')
 
 @app.route('/result')
 def result():
     filename = request.args.get('filename')
     result = request.args.get('result')
-    return render_template('result.html', filename=filename, result=result)
+    probability = request.args.get('probability')
+    return render_template('result.html', filename=filename, result=result, probability=probability)
+
+# @app.route('/uploads/<filename>')
+# def uploaded_file(filename):
+#     return f"File uploaded successfully: {filename}"
+
+@app.route('/display/<filename>')
+def display_image(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 
 
 if __name__ == '__main__':
